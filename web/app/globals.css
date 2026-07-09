@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #07080b;
+  --color-panel: #0d0f15;
+  --color-panel2: #131722;
+  --color-edge: #1c2130;
+  --color-edge2: #2a3044;
+  --color-fg: #e9ebf2;
+  --color-mut: #8b92a7;
+  --color-dim: #565d72;
+  --color-up: #2bd48a;
+  --color-updim: #133527;
+  --color-down: #f4485d;
+  --color-downdim: #3a1420;
+  --color-amber: #ffb224;
+  --color-amberdim: #3a2a08;
+  --font-sans: var(--font-archivo), sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
+}
+
+html {
+  background: var(--color-ink);
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1200px 500px at 50% -200px, rgba(255, 178, 36, 0.05), transparent),
+    var(--color-ink);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* rakamlar her yerde tabular */
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: rgba(255, 178, 36, 0.25);
+}
+
+/* ince scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-edge2) transparent;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rise {
+  animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.live-dot {
+  animation: pulse-dot 2.2s ease-in-out infinite;
+}
