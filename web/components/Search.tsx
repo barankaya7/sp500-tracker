@@ -2,10 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { cq } from "@/lib/client";
 
 type Item = { symbol: string; name: string };
 
-export default function Search({ stocks }: { stocks: Item[] }) {
+let cachedStocks: Item[] | null = null;
+
+export default function Search() {
+  const [stocks, setStocks] = useState<Item[]>(cachedStocks ?? []);
+  useEffect(() => {
+    if (cachedStocks) return;
+    cq<Item>("stocks", "select=symbol,name&order=symbol").then((rows) => {
+      cachedStocks = rows;
+      setStocks(rows);
+    });
+  }, []);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [idx, setIdx] = useState(0);

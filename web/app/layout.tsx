@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Search from "@/components/Search";
-import { q, type Stock, type JobRun } from "@/lib/db";
-import { relTime } from "@/lib/format";
+import Freshness from "@/components/Freshness";
 
 const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], display: "swap" });
 const plexMono = IBM_Plex_Mono({
@@ -21,29 +21,20 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#07080b" };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [stocks, jobs] = await Promise.all([
-    q<Stock>("stocks", "select=symbol,name&order=symbol", 3600),
-    q<JobRun>("job_runs", "select=job,last_run,status&job=eq.quotes", 60),
-  ]);
-  const lastQuote = jobs[0]?.last_run ?? null;
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr" className={`${archivo.variable} ${plexMono.variable} h-full antialiased`}>
       <body className="min-h-full">
         <header className="sticky top-0 z-40 border-b border-edge bg-ink/85 backdrop-blur-md">
           <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
-            <a href="/" className="flex shrink-0 items-baseline gap-0.5 select-none">
+            <Link href="/" className="flex shrink-0 items-baseline gap-0.5 select-none">
               <span className="text-[17px] font-bold tracking-tight">RADAR</span>
               <span className="tnum text-[17px] font-semibold text-amber">·500</span>
-            </a>
+            </Link>
             <div className="min-w-0 flex-1">
-              <Search stocks={stocks} />
+              <Search />
             </div>
-            <div className="hidden shrink-0 items-center gap-1.5 sm:flex" title="Son veri güncellemesi">
-              <span className={`live-dot h-1.5 w-1.5 rounded-full ${lastQuote ? "bg-up" : "bg-dim"}`} />
-              <span className="text-[11px] text-mut">{lastQuote ? relTime(lastQuote) : "veri bekleniyor"}</span>
-            </div>
+            <Freshness />
           </div>
           <Nav />
         </header>
