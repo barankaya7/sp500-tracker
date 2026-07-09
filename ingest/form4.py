@@ -46,6 +46,7 @@ def parse_filing(index_url: str, sp500: set[str]) -> list[dict]:
     # index sayfasından .xml belgesini bul
     html = sec_get(index_url).text
     m = re.findall(r'href="(/Archives/[^"]+\.xml)"', html)
+    m = [p for p in m if "/xsl" not in p]  # XSL görüntüleyici linklerini atla
     xml_paths = [p for p in m if "primary_doc" not in p] or m
     if not xml_paths:
         return []
@@ -124,6 +125,9 @@ def main():
             if r["transaction_code"] == "P" and (r["value"] or 0) >= BIG_BUY_USD:
                 alerts.append(r)
 
+    # aynı bildirim owner+issuer CIK'leri altında iki kez listelenebilir — id bazında tekilleştir
+    all_rows = list({r["id"]: r for r in all_rows}.values())
+    alerts = list({a["id"]: a for a in alerts}.values())
     n = upsert("insider_trades", all_rows, on_conflict="id")
     for a in alerts:
         send_alert(
