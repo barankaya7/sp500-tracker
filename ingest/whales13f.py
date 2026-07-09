@@ -74,8 +74,10 @@ def fetch_infotable(cik: str, acc: str) -> list[dict]:
     if not xml_name:
         return []
     doc = sec_get(f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc}/{xml_name}").text
-    doc = re.sub(r'xmlns="[^"]+"', "", doc, count=10)  # namespace'leri temizle
     root = ET.fromstring(doc)
+    for el in root.iter():  # namespace'leri temizle (default ve önekli)
+        if "}" in el.tag:
+            el.tag = el.tag.split("}", 1)[1]
     holdings = {}
     for it in root.iter("infoTable"):
         def t(tag, el=it):
@@ -99,9 +101,11 @@ def fetch_infotable(cik: str, acc: str) -> list[dict]:
 
 def norm_name(s: str) -> str:
     s = re.sub(r"[^A-Z0-9 ]", "", s.upper())
-    for suffix in (" INC", " CORP", " CO", " PLC", " LTD", " HOLDINGS", " GROUP", " COMPANY", " COM", " CL A", " CL B", " CL C", " NEW"):
+    for suffix in (" CORPORATION", " INCORPORATED", " COMPANIES", " CLASS A", " CLASS B", " CLASS C",
+                   " INC", " CORP", " CO", " PLC", " LTD", " HOLDINGS", " HOLDING", " GROUP",
+                   " COMPANY", " COM", " CL A", " CL B", " CL C", " NEW", " DEL", " THE"):
         s = s.replace(suffix, "")
-    return s.strip()
+    return re.sub(r"\s+", " ", s).strip()
 
 
 def build_symbol_resolver():
@@ -210,11 +214,23 @@ def main():
         total_rows += upsert("whale_holdings", rows, on_conflict="cik,quarter,cusip")
         print(f"  {name}: {quarter} → {len(rows)} pozisyon")
 
+    # kendini onarma: DB'de sembolü çözülmemiş pozisyonları da eşlemeye çalış
+    stocks_by_name = {norm_name(r["name"]): r["symbol"] for r in select("stocks", "select=symbol,name")}
+    pending = {e["cusip"] for e in new_entries}
+    for h in select("whale_holdings", "select=cusip,issuer_name&symbol=is.null"):
+        cusip = h["cusip"]
+        if cusip in pending or cache.get(cusip):
+            continue
+        sym = stocks_by_name.get(norm_name(h["issuer_name"] or ""))
+        new_entries.append({"cusip": cusip, "symbol": sym,
+                            "source": "name_match" if sym else "unmatched"})
+        pending.add(cusip)
+
     openfigi_fill(new_entries, cache)
     if new_entries:
         upsert("cusip_map", new_entries, on_conflict="cusip")
         # sembolü sonradan çözülenleri güncelle
-        fixes = [e for e in new_entries if e["source"] == "openfigi" and e["symbol"]]
+        fixes = [e for e in new_entries if e["symbol"]]
         for e in fixes:
             upsert("whale_holdings",
                    [{**r, "symbol": e["symbol"]} for r in select(
