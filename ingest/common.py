@@ -19,8 +19,8 @@ if not SUPABASE_URL or not SERVICE_KEY:
 
 def _db_reachable() -> bool:
     try:
-        requests.head(f"{SUPABASE_URL}/rest/v1/", timeout=10)
-        return True
+        r = requests.head(f"{SUPABASE_URL}/rest/v1/", timeout=10)
+        return r.status_code < 500  # 5xx = proje uyanıyor/kapalı
     except requests.RequestException:
         return False
 
