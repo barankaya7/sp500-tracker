@@ -16,6 +16,32 @@ if not SUPABASE_URL or not SERVICE_KEY:
     print("[uyarı] Kurulum için: bash scripts/setup_secrets.sh")
     sys.exit(0)
 
+
+def _db_reachable() -> bool:
+    try:
+        requests.head(f"{SUPABASE_URL}/rest/v1/", timeout=10)
+        return True
+    except requests.RequestException:
+        return False
+
+
+if not _db_reachable():
+    # DB uykuda/erişilemez: yine düşme, e-posta seli olmasın. Günlük digest saatinde
+    # Telegram'dan tek uyarı gönder (DB'siz dedupe yapılamadığı için sadece o job'da).
+    print("[uyarı] Supabase'e ulaşılamıyor — iş atlandı (proje uyumuş olabilir).")
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    chat = os.environ.get("TELEGRAM_CHAT_ID", "")
+    if token and chat and os.path.basename(sys.argv[0]) == "digest.py":
+        try:
+            requests.post(f"https://api.telegram.org/bot{token}/sendMessage", timeout=15, json={
+                "chat_id": chat,
+                "text": "⚠️ RADAR·500: Veritabanına ulaşılamıyor (Supabase uyumuş olabilir). "
+                        "Supabase panelinden projeyi 'Restore' etmek gerekiyor.",
+            })
+        except requests.RequestException:
+            pass
+    sys.exit(0)
+
 HEADERS = {
     "apikey": SERVICE_KEY,
     "Authorization": f"Bearer {SERVICE_KEY}",
