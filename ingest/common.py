@@ -6,8 +6,15 @@ import time
 import datetime as dt
 import requests
 
-SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
-SERVICE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+
+if not SUPABASE_URL or not SERVICE_KEY:
+    # Secrets kurulmamışsa job'ı DÜŞÜRME — başarısız run bildirimi yağmasın diye
+    # sessizce başarılı çık. Kurulum: bash scripts/setup_secrets.sh
+    print("[uyarı] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY tanımlı değil — iş atlandı.")
+    print("[uyarı] Kurulum için: bash scripts/setup_secrets.sh")
+    sys.exit(0)
 
 HEADERS = {
     "apikey": SERVICE_KEY,
