@@ -1,31 +1,37 @@
 # RADAR·500
 
-S&P 500 takip ve sinyal paneli — fiyat, temel veri, insider (SEC Form 4), balina (13F), kongre işlemleri ve haber akışını tek panelde toplar; her hisseye günlük 0-100 kompozit skor üretir.
+An S&P 500 tracking and signal dashboard. It pulls price data, fundamentals, insider transactions (SEC Form 4), institutional holdings (13F), congressional trades and news into one panel, and produces a daily 0–100 composite score per ticker.
 
-## Mimari
+## Architecture
 
 ```
 GitHub Actions (Python, cron) → Supabase Postgres → Next.js (Vercel)
-        └→ Telegram (günlük özet + kritik alarmlar)
+        └→ Telegram (daily digest + critical alerts)
 ```
 
-| Klasör | İçerik |
+| Directory | Contents |
 |---|---|
-| `ingest/` | Python veri toplayıcılar (yfinance, SEC EDGAR, kongre, haber, skor motoru) |
-| `supabase/migrations/` | Veritabanı şeması |
-| `web/` | Next.js 16 uygulaması (App Router + Tailwind) |
-| `.github/workflows/` | Zamanlanmış ingestion işleri |
+| `ingest/` | Python collectors — yfinance, SEC EDGAR, congressional trades, news, and the scoring engine |
+| `supabase/migrations/` | Database schema |
+| `web/` | Next.js 16 app (App Router + Tailwind) |
+| `.github/workflows/` | Scheduled ingestion jobs |
 
-## Zamanlama (UTC)
+## Schedule (UTC)
 
-- `intraday.yml` — piyasa saatlerinde 30 dk'da bir: fiyat snapshot + Form 4 poll + hareket alarmları
-- `daily.yml` — hafta içi 21:30: tüm veri + skorlar + budama
-- `digest.yml` — hafta içi 13:00 (16:00 TR): Telegram günlük özeti
+| Workflow | When | What |
+|---|---|---|
+| `intraday.yml` | every 30 min during market hours | price snapshot, Form 4 poll, movement alerts |
+| `daily.yml` | weekdays 21:30 | full ingest, scoring, pruning |
+| `digest.yml` | weekdays 13:00 | Telegram daily digest |
 
-## Gerekli GitHub Secrets
+## Configuration
 
-`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, opsiyonel `FINNHUB_API_KEY`. Vars: `SITE_URL`.
+GitHub Secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and optionally `FINNHUB_API_KEY`. Vars: `SITE_URL`.
 
-## Not
+## Status
 
-Bu projedeki hiçbir çıktı yatırım tavsiyesi değildir. 13F verileri yapısal olarak ~45 gün gecikmelidir.
+Shelved as of 31 July 2026 — the ingestion and scoring work, but I stopped maintaining it to focus on my exam-prep business. It can be restarted.
+
+## Disclaimer
+
+Nothing this project produces is investment advice. 13F data is structurally delayed by roughly 45 days, and the composite score is a heuristic, not a prediction.
